@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Seattle Crime & Basemap Tile Sets</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Map title & description panel */
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            width: 260px;
+            z-index: 1;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+
+        #info h2 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        #info p {
+            margin: 0;
+            font-size: 12px;
+        }
+
+        /* Layer switcher menu */
+        #menu {
+            background: #fff;
+            position: absolute;
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+            border-radius: 3px;
+            width: 200px;
+            border: 1px solid rgba(0, 0, 0, 0.4);
+        }
+
+        #menu a {
+            font-size: 13px;
+            color: #404040;
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+
+        #menu a:last-child {
+            border: none;
+        }
+
+        #menu a:hover {
+            background-color: #f0f0f0;
+        }
+
+        #menu a.active {
+            background-color: #3887be;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Info panel -->
+    <div id="info">
+        <h2>Seattle Crime Tile Maps</h2>
+        <p>
+            Four raster tile sets created in QGIS and Mapbox Studio, visualizing
+            basemap design, violent crime data, and themed map compositions.
+        </p>
+    </div>
+
+    <!-- Layer switcher -->
+    <nav id="menu"></nav>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <script>
+        mapboxgl.accessToken =
+            'pk.eyJ1IjoidmFtaWthZ29lbCIsImEiOiJjbWxiZGFpdjkwbHR1M2ZzOXZzdDA1aHc0In0.NJ-x0kZxeRad7lUM9BDi6Q';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v10',
+            center: [-122.33, 47.61],
+            zoom: 11
+        });
+
+        // Add controls
+        map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+        map.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }));
+
+        map.on('load', () => {
+
+            // ---- TILE SOURCES ----
+            map.addSource('basemap', {
+                type: 'raster',
+                tiles: ['assets/tileset_1/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: 'Custom basemap designed in Mapbox Studio'
+            });
+
+            map.addSource('crime', {
+                type: 'raster',
+                tiles: ['assets/tileset_2/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: 'Seattle Police Department Violent Crime Data (Jan–Feb 2026)'
+            });
+
+            map.addSource('combined', {
+                type: 'raster',
+                tiles: ['assets/tileset_3/{z}/{x}/{y}.png'],
+                tileSize: 256
+            });
+
+            map.addSource('theme', {
+                type: 'raster',
+                tiles: ['assets/tileset_4/{z}/{x}/{y}.png'],
+                tileSize: 256
+            });
+
+            // ---- TILE LAYERS ----
+            map.addLayer({
+                id: 'Basemap',
+                type: 'raster',
+                source: 'basemap',
+                layout: { visibility: 'visible' }
+            });
+
+            map.addLayer({
+                id: 'Crime Data',
+                type: 'raster',
+                source: 'crime',
+                layout: { visibility: 'none' }
+            });
+
+            map.addLayer({
+                id: 'Basemap + Crime',
+                type: 'raster',
+                source: 'combined',
+                layout: { visibility: 'none' }
+            });
+
+            map.addLayer({
+                id: 'Crime Hotspots Theme',
+                type: 'raster',
+                source: 'theme',
+                layout: { visibility: 'none' }
+            });
+        });
+
+        // ---- LAYER SWITCHER ----
+        map.on('idle', () => {
+            const layers = [
+                'Basemap',
+                'Crime Data',
+                'Basemap + Crime',
+                'Crime Hotspots Theme'
+            ];
+
+            for (const id of layers) {
+                if (document.getElementById(id)) continue;
+
+                const link = document.createElement('a');
+                link.id = id;
+                link.href = '#';
+                link.textContent = id;
+
+                link.onclick = function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const visibility = map.getLayoutProperty(id, 'visibility');
+
+                    if (visibility === 'visible') {
+                        map.setLayoutProperty(id, 'visibility', 'none');
+                        this.className = '';
+                    } else {
+                        map.setLayoutProperty(id, 'visibility', 'visible');
+                        this.className = 'active';
+                    }
+                };
+
+                document.getElementById('menu').appendChild(link);
+            }
+        });
+    </script>
+
+</body>
+</html>
